@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     *dec_turn = 0;
 
     // Print initial money
-    printf("Master Process: Current money is %d\n", *money);
+    printf("Master Process: Current money is %d\n\n", *money);
 
     
     // ----------------- CREATE INCREMENTER PROCESSES -----------------
@@ -179,7 +179,7 @@ void increaser_function(sem_t* mutex, int* money, int* inc_turn, int* state, int
             // Check if last process of turn
             if( *inc_turn % ni == 0 )
             {
-                printf("Increaser Process %d: Current money is %d, increaser processes finished their turn %d\n" , i, *money, *inc_turn / ni);
+                printf("Increaser Process %d: Current money is %d, increaser processes finished their turn %d\n\n" , i, *money, *inc_turn / ni);
 
                 // Check if next turn is decreasers
                 if( *inc_turn % (ni * ti) == 0  && (*state == 1 || (*money >= threshold))) {
@@ -207,7 +207,7 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
     int fibonacci = 1;
     int fibonacci_inc = 0;
     int fibonacci_id = 1;
-    
+
     // Work as long as program not terminated
     while (*state != 0)
     {
@@ -229,12 +229,27 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
             // Check if odd-even matches
             if(i % 2 != *money % 2)
             {
-                // Increment turns
-                t++;
-                *dec_turn += 1;
+                // If there are more processes avaiable, wait
+                // Else, increment turns
+                if( *dec_turn < t * nd + (nd / 2) )
+                {
+                    sem_post(mutex);
+                    continue;
+                }
+                else
+                {
+                    // Increment turns
+                    t++;
+                    *dec_turn += 1;
 
-                sem_post(mutex);
-                continue;
+                    if(*dec_turn % nd == 0)
+                        printf("Decreaser Process %d: odd - even unmatch, decreaser processes finished their turn %d\n\n", i, *dec_turn / nd);
+                    else
+                        printf("Decreaser Process %d: odd - even unmatch\n", i);
+
+                    sem_post(mutex);
+                    continue;
+                }
             }
 
             // Increment turns
@@ -247,13 +262,13 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
             // Print values
             if(*money > 0)
                 if(*dec_turn % nd == 0)
-                    printf("Decreaser Process %d: Current money is %d (%dth fibonacci number for decreaser %d), decreaser processes finished their turn %d\n"
+                    printf("Decreaser Process %d: Current money is %d (%dth fibonacci number for decreaser %d), decreaser processes finished their turn %d\n\n"
                         , i, *money, fibonacci_id, i, *dec_turn / nd);
                 else
                     printf("Decreaser Process %d: Current money is %d (%dth fibonacci number for decreaser %d)\n", i, *money, fibonacci_id, i);
             else
             {
-                printf("Decreaser Process %d: Current money is less than %d, signaling master to finish (%dth fibonacci number for decreaser %d)\n"
+                printf("Decreaser Process %d: Current money is less than %d, signaling master to finish (%dth fibonacci number for decreaser %d)\n\n"
                     , i, fibonacci, fibonacci_id, i);
                 *state = 0;
                 sem_post(mutex);
@@ -269,9 +284,9 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
             // Check state
             if( *dec_turn % (nd * td) == 0 )
                 *state = 1;
-            
+
             // Leave critical section
             sem_post(mutex);
         }
     }
-}
+} 
