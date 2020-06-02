@@ -229,25 +229,12 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
             // Check if odd-even matches
             if(i % 2 != *money % 2)
             {
-                // If there are more processes avaiable, wait
-                // Else, increment turns
-                if( *dec_turn < t * nd + (nd / 2) )
-                {
-                    sem_post(mutex);
-                    continue;
-                }
-                else
-                {
-                    // Increment turns
-                    t++;
-                    *dec_turn += 1;
+                // Increment turns
+                t++;
+                *dec_turn += 1;
 
-                    if(*dec_turn % nd == 0)
-                        printf("Decreaser Process %d: odd - even unmatch, decreaser processes finished their turn %d\n", i, *dec_turn / nd);
-
-                    sem_post(mutex);
-                    continue;
-                }
+                sem_post(mutex);
+                continue;
             }
 
             // Increment turns
