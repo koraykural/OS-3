@@ -8,6 +8,8 @@
 * Example: ./main 150 4 2 2 4
 */
 
+#define _SVID_SOURCE
+#define _DEFAULT_SOURCE
 #include <stdio.h>       // printf()
 #include <stdlib.h>      // exit()
 #include <unistd.h>      // fork()
@@ -156,11 +158,15 @@ void increaser_function(sem_t* mutex, int* money, int* inc_turn, int* state, int
     {
         if(*state > 0) // Increasers should work
         {
-            // Wait for other increasers to finish their turn
-            while( !(*inc_turn < (t+1) * ni && *inc_turn >= t * ni) );
-
             // Enter to the critical section
             sem_wait(mutex);
+
+            // Wait for other increasers to finish their turn
+            if( !(*inc_turn < (t+1) * ni && *inc_turn >= t * ni) )
+            {
+                sem_post(mutex);
+                continue;
+            }
 
             // If some other function changed state
             if(*state < 1)
@@ -213,11 +219,15 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
     {
         if(*state < 0) // Decreasers should work
         {
-            // Wait for other decreasers to finish their turn
-            while( !(*dec_turn < (t+1) * nd && *dec_turn >= t * nd) ) ;
-
             // Enter to the critical section
             sem_wait(mutex);
+
+            // Wait for other decreasers to finish their turn
+            if( !(*dec_turn < (t+1) * nd && *dec_turn >= t * nd) )
+            {
+                sem_post(mutex);
+                continue;
+            }
 
             // If some other function changed state
             if(*state != -1)
@@ -246,6 +256,10 @@ void decreaser_function(sem_t* mutex, int* money, int* dec_turn, int* state, int
                         printf("Decreaser Process %d: odd - even unmatch, decreaser processes finished their turn %d\n\n", i, *dec_turn / nd);
                     else
                         printf("Decreaser Process %d: odd - even unmatch\n", i);
+
+                    // Check state
+                    if( *dec_turn % (nd * td) == 0 )
+                        *state = 1;
 
                     sem_post(mutex);
                     continue;
